@@ -2,7 +2,7 @@ name: Feather Quantizer - scope guardrails
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -23,6 +23,9 @@ jobs:
               per_page: 100,
             });
 
+            const labels = (context.payload.pull_request.labels || []).map(l => l.name);
+            const controlPlaneApproved = labels.includes('control-plane-approved');
+
             const allowedPrefixes = [
               'keyboards/feather_quantizer/',
               'docs/feather-quantizer/',
@@ -30,13 +33,20 @@ jobs:
               'scripts/feather-quantizer/',
             ];
 
-            const protectedExact = new Set([
+            const controlPlaneExact = new Set([
               'AGENTS.md',
+            ]);
+
+            const controlPlanePrefixes = [
+              '.github/workflows/',
+            ];
+
+            // Never allowed merely by the control-plane label.
+            const immutableProtectedExact = new Set([
               '.gitmodules',
             ]);
 
-            const protectedPrefixes = [
-              '.github/workflows/',
+            const immutableProtectedPrefixes = [
               'keyboards/sekigon/',
               'lib/',
               'platforms/',
@@ -49,10 +59,12 @@ jobs:
 
             for (const file of files) {
               const path = file.filename;
-              const isProtected = protectedExact.has(path) || protectedPrefixes.some(p => path.startsWith(p));
-              const isAllowed = allowedPrefixes.some(p => path.startsWith(p));
+              const isImmutableProtected = immutableProtectedExact.has(path) || immutableProtectedPrefixes.some(p => path.startsWith(p));
+              const isNormalAllowed = allowedPrefixes.some(p => path.startsWith(p));
+              const isControlPlane = controlPlaneExact.has(path) || controlPlanePrefixes.some(p => path.startsWith(p));
+              const isAllowedControlPlane = controlPlaneApproved && isControlPlane;
 
-              if (isProtected || !isAllowed) {
+              if (isImmutableProtected || (!isNormalAllowed && !isAllowedControlPlane)) {
                 violations.push(path);
               }
 
@@ -66,5 +78,9 @@ jobs:
             }
 
             if (violations.length > 0) {
-              core.setFailed(`Files outside the Feather allowlist or inside protected upstream/control paths:\n${violations.join('\n')}`);
+              core.setFailed(`Files outside the Feather allowlist or inside protected upstream/dependency paths:\n${violations.join('\n')}\n\nControl-plane files require the human-applied 'control-plane-approved' PR label. That label never authorizes upstream/dependency/.gitmodules changes.`);
+            }
+
+            if (controlPlaneApproved) {
+              core.notice("Human control-plane approval label detected. AGENTS.md/.github/workflows changes are allowed for this PR; upstream/dependency paths remain protected.");
             }

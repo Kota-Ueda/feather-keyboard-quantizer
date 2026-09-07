@@ -1,0 +1,119 @@
+name: Feather Quantizer - loop engineering
+
+on:
+  pull_request:
+    branches:
+      - feather-main
+      - 'loop/**'
+    paths:
+      - 'keyboards/feather_quantizer/**'
+      - 'docs/feather-quantizer/**'
+      - 'prompts/**'
+      - 'scripts/feather-quantizer/**'
+      - 'AGENTS.md'
+      - '.github/workflows/feather-loop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  loop-state-and-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        shell: bash
+        run: git fetch origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+
+      - name: Verify task diff and loop state structure
+        shell: bash
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/feather-quantizer/verify-task.sh
+
+      - name: Require run state for loop work
+        shell: bash
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          base = os.environ['BASE_REF']
+          base_branch = os.environ['BASE_BRANCH']
+          head_branch = os.environ['HEAD_BRANCH']
+
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only', f'{base}...HEAD'], text=True
+          ).splitlines()
+
+          states = [
+              p for p in changed
+              if p.startswith('docs/feather-quantizer/loop/runs/') and p.endswith('/state.json')
+          ]
+
+          loop_related = base_branch.startswith('loop/') or head_branch.startswith('loop/') or head_branch.startswith('codex/')
+
+          if loop_related and not states:
+              print('ERROR: loop-related PR must include/update a run state.json', file=sys.stderr)
+              sys.exit(1)
+
+          for state_path in states:
+              path = pathlib.Path(state_path)
+              if not path.is_file():
+                  print(f'ERROR: missing state file {state_path}', file=sys.stderr)
+                  sys.exit(1)
+              subprocess.check_call([
+                  'python3', 'scripts/feather-quantizer/verify-loop-state.py', state_path
+              ])
+
+          print(f'loop state files: {states or "none"}')
+          PY
+
+      - name: Enforce merge readiness for loop branch into feather-main
+        if: ${{ github.base_ref == 'feather-main' && startsWith(github.head_ref, 'loop/') }}
+        shell: bash
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only', f"{__import__('os').environ['BASE_REF']}...HEAD"],
+              text=True,
+          ).splitlines()
+          states = [
+              p for p in changed
+              if p.startswith('docs/feather-quantizer/loop/runs/') and p.endswith('/state.json')
+          ]
+
+          if len(states) != 1:
+              print(f'ERROR: loop -> feather-main PR must contain exactly one run state.json; got {states}', file=sys.stderr)
+              sys.exit(1)
+
+          data = json.loads(pathlib.Path(states[0]).read_text(encoding='utf-8'))
+          if data.get('status') != 'PASS':
+              print(f"ERROR: loop branch is not merge-ready; status={data.get('status')}", file=sys.stderr)
+              sys.exit(1)
+
+          if data.get('quality', {}).get('score', 0) < 90:
+              print('ERROR: merge-ready loop requires quality score >= 90', file=sys.stderr)
+              sys.exit(1)
+
+          print('merge readiness: PASS')
+          PY

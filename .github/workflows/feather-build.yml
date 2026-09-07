@@ -2,7 +2,9 @@ name: Feather Quantizer - firmware build
 
 on:
   push:
-    branches: [feather-main]
+    branches:
+      - feather-main
+      - 'loop/**'
     paths:
       - 'keyboards/feather_quantizer/**'
       - 'docs/feather-quantizer/**'
@@ -10,7 +12,9 @@ on:
       - 'scripts/feather-quantizer/**'
       - '.github/workflows/feather-build.yml'
   pull_request:
-    branches: [feather-main]
+    branches:
+      - feather-main
+      - 'loop/**'
     paths:
       - 'keyboards/feather_quantizer/**'
       - 'docs/feather-quantizer/**'
