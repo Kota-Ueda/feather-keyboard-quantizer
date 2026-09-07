@@ -1,0 +1,74 @@
+{
+  "task_id": "002",
+  "branch": "loop/002-phase-0-hid-capture",
+  "status": "NOT_STARTED",
+  "iteration": 0,
+  "max_iterations": 3,
+  "acceptance_criteria": [
+    {
+      "id": "AC1",
+      "description": "Define a reproducible, non-destructive HID capture procedure covering required USB/HID metadata, descriptors, reports, controls, and report lengths.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC2",
+      "description": "Define the target-device and connection-mode capture matrix for ELECOM DEFT and ELECOM HUGE PLUS without inventing the DEFT model number or results.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC3",
+      "description": "Define deterministic evidence naming and schema that separates observed bytes from interpretation and annotation.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC4",
+      "description": "Define explicit checks against the KQM constraints identified in Task 001 and cite their repository evidence.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC5",
+      "description": "Document the Feather USB host safety boundary for GP16/GP17 and the evidence process for GP18 VBUS polarity and timing without guessing.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC6",
+      "description": "State explicitly that Task 002 does not prove DEFT or HUGE PLUS compatibility and that later hardware evidence is required.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    },
+    {
+      "id": "AC7",
+      "description": "Maintain valid loop state and append-only iteration evidence for Task 002.",
+      "status": "UNKNOWN",
+      "evidence": ""
+    }
+  ],
+  "quality": {
+    "score": 0,
+    "hard_gates": {
+      "HG1": "UNKNOWN",
+      "HG2": "UNKNOWN",
+      "HG3": "UNKNOWN",
+      "HG4": "UNKNOWN",
+      "HG5": "UNKNOWN",
+      "HG6": "UNKNOWN",
+      "HG7": "UNKNOWN",
+      "HG8": "UNKNOWN",
+      "HG9": "UNKNOWN",
+      "HG10": "UNKNOWN"
+    }
+  },
+  "hardware": {
+    "requirement": "NONE",
+    "evidence_available": false,
+    "evidence": []
+  },
+  "last_failure_signature": null,
+  "same_failure_count": 0,
+  "updated_at": "2026-09-07T21:12:00+09:00"
+}
