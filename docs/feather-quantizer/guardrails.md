@@ -1,12 +1,14 @@
 # AI implementation guardrails
 
-These controls exist to keep Codex changes narrow, reviewable, and reversible.
+These controls exist to keep Codex changes narrow, reviewable, reversible, and bounded.
 
 ## G0 — task scope is authoritative
 
-Every task must identify whether it is analysis-only, documentation, board port, HID parser, gesture logic, or another single concern.
+Every task must identify whether it is analysis-only, documentation, board port, HID parser, gesture logic, Vial integration, hardware verification, infrastructure, or another single concern.
 
 Do not expand the task because an adjacent improvement looks useful.
+
+For `loop/*` tasks, the task-specific prompt must also declare the fields required by `docs/feather-quantizer/loop/TASK_CONTRACT.md`.
 
 ## G1 — upstream is read-only by default
 
@@ -49,6 +51,13 @@ Documentation is restricted to:
 docs/feather-quantizer/**
 ```
 
+Task prompts and project helper scripts are writable only when the current task explicitly includes:
+
+```text
+prompts/**
+scripts/feather-quantizer/**
+```
+
 ## G4 — control-plane files are human-owned
 
 Do not modify without explicit human instruction:
@@ -60,6 +69,8 @@ AGENTS.md
 ```
 
 Do not create `AGENTS.override.md` unless the human explicitly asks for it.
+
+Loop Engineering does not change this rule.
 
 ## G5 — no unrelated diff
 
@@ -89,8 +100,9 @@ Do not claim:
 - gesture feel/latency
 - Vial persistence on hardware
 - sleep/resume stability
+- hot-plug stability
 
-until each item has been tested on actual hardware.
+until each item has been tested on actual hardware and the evidence is recorded in the task branch.
 
 ## G8 — no destructive operations
 
@@ -103,6 +115,7 @@ Without explicit human instruction, do not:
 - flash a connected board
 - create a release
 - merge a PR
+- modify upstream repositories
 
 ## G9 — completion gate
 
@@ -116,3 +129,45 @@ git diff --name-only
 ```
 
 Run the smallest relevant build/check and report its exact outcome.
+
+For loop tasks also run:
+
+```bash
+bash scripts/feather-quantizer/verify-task.sh
+```
+
+## G10 — bounded loop only
+
+Loop Engineering is bounded autonomy, not unrestricted iteration.
+
+For `loop/*` tasks:
+
+- default maximum is 5 implementation iterations;
+- the same unresolved failure twice requires STOP unless the second result supplies materially new evidence;
+- one implementation iteration should test one primary hypothesis;
+- previous iteration records must not be erased or rewritten;
+- a hardware-dependent conclusion without hardware evidence requires `BLOCKED_HARDWARE`;
+- a protected/shared/dependency change requirement requires STOP and human approval;
+- acceptance criteria may not be weakened to obtain PASS.
+
+Use the state and iteration files defined in `docs/feather-quantizer/loop/LOOP.md`.
+
+## G11 — Hard Gates override score
+
+Quality score is advisory unless all Hard Gates pass.
+
+A task cannot be PASS merely because it scores >= 90. All applicable HG1..HG10 in `QUALITY_GATES.md` must be PASS or explicitly NA.
+
+## G12 — branch containment
+
+Normal loop work uses:
+
+```text
+feather-main
+  -> loop/<task-id>-<slug>
+       -> Codex working branch / inner PR
+```
+
+Do not create a PR from the project fork to upstream `sekigon-gonnoc/vial-qmk` as part of normal development.
+
+Only a human may decide to create an upstream contribution later.
