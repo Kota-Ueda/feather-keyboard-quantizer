@@ -2,7 +2,15 @@
 
 ## Purpose
 
-This project uses bounded loop engineering for implementation work. The agent may iterate autonomously, but only inside an explicit task contract, with hard stop conditions and human review at hardware or control-plane boundaries.
+This project uses bounded loop engineering with **separated Codex roles**. Implementation may iterate autonomously inside an explicit task contract, but planning, implementation, independent review, deterministic verification, specialist review, and human authority are deliberately separated.
+
+The default topology is defined in `docs/feather-quantizer/loop/MULTI_AGENT.md`:
+
+```text
+Codex Planner -> Codex Runner -> CI -> Codex Reviewer -> Human merge
+                                  \
+                                   -> conditional Specialist Reviewer
+```
 
 The protocol is designed for the Feather RP2040 Keyboard Quantizer port, where build automation is useful but real USB/HID behavior requires physical evidence.
 
@@ -13,40 +21,60 @@ feather-main
   |
   +-- loop/<task-id>-<slug>          human-owned task branch
          |
-         +-- codex/<task-work>       Codex working branch / inner PR
+         +-- codex/<task-work>       Runner working branch / inner PR
 ```
+
+Planner, Reviewer, and Specialist roles do not need implementation branches. The Runner owns implementation writes.
 
 Normal flow:
 
 1. create `loop/<task-id>-<slug>` from `feather-main`;
-2. put the task prompt under `prompts/tasks/`;
-3. run Codex against the loop task branch;
-4. when the bounded loop reaches `PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`, Codex creates or updates a **Draft inner PR** from its working branch to the declared loop task branch when the platform-supported PR action is available;
-5. human reviews the diff, iteration evidence, and CI;
-6. human marks the inner PR ready and merges it only when the task contract is satisfied or when a blocked state must be preserved for human action;
-7. open `loop/<task-id>-<slug>` -> `feather-main` only when the task is `PASS`;
-8. merge to `feather-main` only after merge-readiness gates pass.
+2. create/validate the task contract; use Codex Planner unless a valid human-authored contract already exists;
+3. run Codex Runner against the loop task branch;
+4. Runner performs bounded internal iterations and creates/updates a **Draft inner PR** at terminal handoff when platform-supported PR actions are available;
+5. run repository CI / deterministic checks;
+6. run an independent Codex Reviewer from fresh context;
+7. when `MULTI_AGENT.md` triggers a specialist domain, run the corresponding independent Specialist Reviewer;
+8. if review returns `REQUEST_CHANGES`/`FINDINGS`, return findings to Runner and update the same Draft PR; default maximum is 2 independent review correction cycles;
+9. if review returns `APPROVE` and all required specialist verdicts are `CLEAR`, the human may mark the inner PR ready and merge it;
+10. blocked states may be merged into the loop task branch only to preserve reviewed handoff/evidence procedures for human action;
+11. open `loop/<task-id>-<slug>` -> `feather-main` only when the task is `PASS`;
+12. merge to `feather-main` only after merge-readiness gates pass and human approval.
 
 Do not open project work directly against upstream `sekigon-gonnoc/vial-qmk`.
 
+## Agent-role separation
+
+The role contract in `MULTI_AGENT.md` is mandatory for R1/R2 work:
+
+- Planner plans but does not implement product code;
+- Runner implements but does not approve itself;
+- Reviewer reviews from fresh context and does not fix findings;
+- Specialist Reviewer is conditional and read-only by default;
+- CI is the deterministic verification layer, not an agent;
+- human retains merge, hardware, protected-path, scope-expansion, and destructive-action authority.
+
+The independent Reviewer is not invoked after every Runner iteration. Review normally occurs only at a terminal handoff candidate, with early review reserved for high-risk hardware/privacy/architecture/protected/dependency decisions.
+
 ## Draft PR handoff
 
-Draft PR creation is part of delivery, not project approval.
+Draft PR creation is part of Runner delivery, not project approval.
 
-When a loop reaches a terminal handoff state (`PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`), the agent should create or update one Draft inner PR when the execution platform exposes a repository-authorized PR action.
+When a loop reaches a terminal handoff state (`PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`), the Runner should create or update one Draft inner PR when the execution platform exposes a repository-authorized PR action.
 
 The Draft PR MUST:
 
 - target the task contract's declared `loop/<task-id>-<slug>` base branch;
-- originate from the current Codex working branch;
+- originate from the current Runner working branch;
 - remain Draft even when the task status is `PASS`;
 - summarize status, iterations used, changed files, acceptance criteria, hard gates, quality score, verification, hardware evidence, blockers, and recommended next task;
 - link or name the task prompt and run-state files;
 - update an existing inner PR instead of creating duplicates for the same working branch/base pair.
 
-The agent MUST NOT:
+The Runner MUST NOT:
 
 - mark its own PR ready for review;
+- approve its own PR;
 - merge any PR;
 - enable auto-merge;
 - retarget the PR to `feather-main`;
@@ -54,18 +82,18 @@ The agent MUST NOT:
 - request, expose, store, or configure a personal access token, SSH private key, or other long-lived GitHub credential merely to automate PR creation;
 - bypass the platform-supported repository integration by adding ad-hoc credentials to the task environment.
 
-If the platform does not expose an authorized PR action, PR creation is not a task failure. The agent must report the exact head branch, intended base branch, terminal task status, and that human PR creation is required.
+If the platform does not expose an authorized PR action, PR creation is not a task failure. The Runner must report the exact head branch, intended base branch, terminal task status, and that human PR creation is required.
 
-Human review remains mandatory before any inner PR is marked ready or merged.
+Independent review plus human merge authority remain mandatory unless an R0 task contract explicitly authorizes reviewer omission.
 
-## Bounded loop
+## Bounded Runner loop
 
 Each implementation iteration MUST follow this sequence:
 
 1. **Observe**
    - inspect task contract;
    - inspect `git status --short` and existing diff;
-   - capture the current failing check, missing behavior, or evidence gap;
+   - capture the current failing check, missing behavior, review finding, or evidence gap;
    - separate pre-existing unrelated changes from task changes.
 2. **Hypothesize**
    - state one primary causal hypothesis;
@@ -90,12 +118,17 @@ Each implementation iteration MUST follow this sequence:
    - `BLOCKED_ENVIRONMENT`: required non-project tooling is unavailable and installing/updating it is not authorized;
    - `STOP`: a stop condition has been reached.
 
-## Iteration limits
+A correction made in response to Reviewer/Specialist findings consumes a normal implementation iteration when project files are changed. Review cycles do not reset the implementation iteration counter.
+
+## Iteration and review limits
 
 - Default maximum: **5 implementation iterations per task**.
 - The task prompt may lower this limit but may not raise it above 5 without explicit human approval.
+- Default maximum: **2 independent review correction cycles per task**.
+- A task prompt may lower the review-cycle limit; raising it requires explicit human approval.
 - A documentation-only observation step does not consume an implementation iteration until a project file is changed in pursuit of the task result.
-- Never reset the counter by changing the hypothesis wording.
+- Never reset counters by changing hypothesis/finding wording.
+- If BLOCKER/MAJOR findings remain after the second review correction cycle, use `ESCALATE_HUMAN` rather than continuing reviewer/runner ping-pong.
 
 ## One-hypothesis rule
 
@@ -117,7 +150,7 @@ Validation: compile target and compare the next error/result.
 
 ## Hardware checkpoints
 
-The agent MUST stop at `BLOCKED_HARDWARE` when a conclusion requires physical evidence that is not already committed to the repository.
+The Runner MUST stop at `BLOCKED_HARDWARE` when a conclusion requires physical evidence that is not already committed to the repository.
 
 Examples:
 
@@ -134,7 +167,8 @@ At a hardware checkpoint:
 2. provide a reproducible, non-destructive procedure;
 3. define expected evidence format;
 4. do not infer the result;
-5. resume only after the evidence is added to the task branch.
+5. invoke early independent review when the handoff itself has safety/privacy/HID-protocol risk;
+6. resume only after the evidence is added to the task branch.
 
 ## Task state
 
@@ -161,16 +195,19 @@ docs/feather-quantizer/loop/runs/002-phase-0-hid-capture/
 
 ## Final task report
 
-Before a task is presented for human review, report:
+Before a task is presented for human merge approval, report:
 
 - final status;
-- iteration count;
+- implementation iteration count;
+- independent review cycle count;
 - files changed and why;
 - acceptance criteria result;
 - hard-gate result;
 - quality score;
 - builds/tests/checks and exact outcomes;
 - hardware evidence used or still missing;
+- Reviewer verdict;
+- required Specialist type and verdict, if any;
 - unresolved risks;
 - Draft PR URL when automatically created, otherwise the exact manual PR handoff branches;
 - smallest recommended next task.
@@ -180,7 +217,7 @@ Before a task is presented for human review, report:
 1. system/developer/user instructions;
 2. task-specific prompt;
 3. `AGENTS.md`;
-4. this loop protocol;
+4. this loop protocol and `MULTI_AGENT.md`;
 5. project documentation.
 
 The loop never authorizes work that is forbidden by a higher-priority instruction or project guardrail.
