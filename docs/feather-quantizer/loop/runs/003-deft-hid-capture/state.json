@@ -1,0 +1,40 @@
+{
+  "task_id": "003",
+  "branch": "loop/003-deft-hid-capture",
+  "status": "NOT_STARTED",
+  "iteration": 0,
+  "max_iterations": 5,
+  "acceptance_criteria": [
+    {"id":"AC1","description":"Record physical identity and capture environment for ELECOM DEFT M-DT2DRBK V02 on 2.4 GHz receiver.","status":"UNKNOWN","evidence":""},
+    {"id":"AC2","description":"Capture USB enumeration data and complete HID descriptors for every HID interface.","status":"UNKNOWN","evidence":""},
+    {"id":"AC3","description":"Capture timestamped raw reports for required controls, axes, wheels/pan and simultaneous inputs.","status":"UNKNOWN","evidence":""},
+    {"id":"AC4","description":"Record observed and descriptor-derived report lengths and complete report inventory.","status":"UNKNOWN","evidence":""},
+    {"id":"AC5","description":"Evaluate captured evidence against current KQM constraints without an overall compatibility claim.","status":"UNKNOWN","evidence":""},
+    {"id":"AC6","description":"Validate JSON/NDJSON, hashes, lengths and separation of observed bytes from interpretation.","status":"UNKNOWN","evidence":""},
+    {"id":"AC7","description":"Reach a hardware-backed conclusion sufficient for the next engineering decision.","status":"UNKNOWN","evidence":""},
+    {"id":"AC8","description":"Maintain valid bounded-loop state and append-only iteration evidence.","status":"UNKNOWN","evidence":""}
+  ],
+  "quality": {
+    "score": 0,
+    "hard_gates": {
+      "HG1":"UNKNOWN",
+      "HG2":"UNKNOWN",
+      "HG3":"UNKNOWN",
+      "HG4":"UNKNOWN",
+      "HG5":"UNKNOWN",
+      "HG6":"UNKNOWN",
+      "HG7":"UNKNOWN",
+      "HG8":"UNKNOWN",
+      "HG9":"UNKNOWN",
+      "HG10":"UNKNOWN"
+    }
+  },
+  "hardware": {
+    "requirement": "REQUIRED_FOR_PASS",
+    "evidence_available": false,
+    "evidence": []
+  },
+  "last_failure_signature": null,
+  "same_failure_count": 0,
+  "updated_at": "2026-09-07T13:00:00Z"
+}
