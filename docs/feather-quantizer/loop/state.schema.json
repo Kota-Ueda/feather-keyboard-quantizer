@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/feather-quantizer-loop-state.schema.json",
+  "title": "Feather Quantizer Loop State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "branch",
+    "status",
+    "iteration",
+    "max_iterations",
+    "acceptance_criteria",
+    "quality",
+    "hardware",
+    "updated_at"
+  ],
+  "properties": {
+    "task_id": {"type": "string", "minLength": 1},
+    "branch": {"type": "string", "pattern": "^loop/.+"},
+    "status": {
+      "type": "string",
+      "enum": ["NOT_STARTED", "CONTINUE", "PASS", "BLOCKED_HARDWARE", "BLOCKED_ENVIRONMENT", "STOP"]
+    },
+    "iteration": {"type": "integer", "minimum": 0, "maximum": 5},
+    "max_iterations": {"type": "integer", "minimum": 1, "maximum": 5},
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "status", "evidence"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "UNKNOWN", "NA"]},
+          "evidence": {"type": "string"}
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "hard_gates"],
+      "properties": {
+        "score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "hard_gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["HG1", "HG2", "HG3", "HG4", "HG5", "HG6", "HG7", "HG8", "HG9", "HG10"],
+          "properties": {
+            "HG1": {"$ref": "#/$defs/gate"},
+            "HG2": {"$ref": "#/$defs/gate"},
+            "HG3": {"$ref": "#/$defs/gate"},
+            "HG4": {"$ref": "#/$defs/gate"},
+            "HG5": {"$ref": "#/$defs/gate"},
+            "HG6": {"$ref": "#/$defs/gate"},
+            "HG7": {"$ref": "#/$defs/gate"},
+            "HG8": {"$ref": "#/$defs/gate"},
+            "HG9": {"$ref": "#/$defs/gate"},
+            "HG10": {"$ref": "#/$defs/gate"}
+          }
+        }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement", "evidence_available"],
+      "properties": {
+        "requirement": {"type": "string", "enum": ["NONE", "REQUIRED_FOR_PASS", "EXPECTED_CHECKPOINT"]},
+        "evidence_available": {"type": "boolean"},
+        "evidence": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "last_failure_signature": {"type": ["string", "null"]},
+    "same_failure_count": {"type": "integer", "minimum": 0, "maximum": 2},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "gate": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "NA", "UNKNOWN"]
+    }
+  }
+}
