@@ -47,14 +47,22 @@ changes were preserved unchanged.
 
 - Intended target command: `make sekigon/keyboard_quantizer/mini:vial` (equivalent
   QMK spelling: `qmk compile -kb sekigon/keyboard_quantizer/mini -km vial`).
-- Result: **not built**. The command failed before compilation because `qmk` is
-  absent (`/bin/sh: 1: qmk: not found` / `Cannot run "qmk hello"`).
+- Codex workspace result: **not built / unverified in this workspace**. The
+  command failed before compilation because `qmk` is absent
+  (`/bin/sh: 1: qmk: not found` / `Cannot run "qmk hello"`).
 - Toolchain: `arm-none-eabi-gcc` is also absent, so no compiler version was
   available. The only observed supporting runtime version was Python `3.14.4`.
-- Artifact: none.
-- Interpretation: this is an environment/toolchain limitation, not evidence of a
-  source failure. Per the dependency freeze, Task 001 did not install, initialize,
-  or update anything to work around it. Baseline compilation remains unverified.
+- Codex workspace artifact: none.
+- Repository CI result: **verified**. The repository's `Feather Quantizer -
+  firmware build` CI has successfully completed the `Build upstream KQM Mini
+  baseline` step and generated/uploaded the KQM baseline UF2. This is separate
+  evidence from the unavailable local toolchain; it does not supply a local
+  compiler version.
+- Interpretation: the local failure is an environment/toolchain limitation, not
+  evidence of a source failure. Per the dependency freeze, Task 001 did not
+  install, initialize, or update anything to work around it. Baseline compilation
+  and UF2 generation are verified by repository CI, but remain unverified in this
+  Codex workspace.
 
 ## 3. Verified runtime path
 
@@ -90,9 +98,9 @@ changes were preserved unchanged.
 3. `mini/rules.mk` explicitly compiles Pico-PIO-USB PIO/host/CRC sources, TinyUSB
    host, hub, HID-host and RP2040 PIO-HCD sources, plus Pico SDK DMA support.
    `mini/tusb_config.h` sets `CFG_TUD_ENABLED=0`, `CFG_TUH_ENABLED=1`,
-   `CFG_TUH_RPI_PIO_USB=1`, hub support, maximum four devices and four HID
-   interfaces. This TinyUSB instance is host-only; QMK's normal native RP2040 USB
-   device stack is separate.
+   `CFG_TUH_RPI_PIO_USB=1`, hub support, `CFG_TUH_DEVICE_MAX=4`, and
+   `CFG_TUH_HID=8`. This TinyUSB instance is host-only; QMK's normal native
+   RP2040 USB device stack is separate.
 
 ### 3.3 Host callbacks, descriptors, and reports
 
@@ -188,9 +196,9 @@ USB device operation was not run in this environment.
 | Core 1 is enabled; host task stack is 2048 bytes; loop sleep is 125 us | `mini/mcuconf.h`, `mini/rules.mk`, `wa_c1_main_task_wrapper` and thread loop in `mini/c1_main.c` | Concurrency, memory, and host servicing assumptions must survive the port. |
 | PIO0, PIO1, and DMA are explicitly released from reset | `c1_main()` | Resource coexistence must be checked against native USB and other Feather features. |
 | Host settings: retry 10, custom timer, 1 ms SOF | `c1_usbh()`, `timer_cb()` | Timing-sensitive; avoid casual changes. |
-| TinyUSB host: hub enabled, 4 devices, 4 HID interfaces, 256-byte enumeration buffer | `mini/tusb_config.h` | Composite receivers and descriptors must fit these limits. |
+| TinyUSB host: hub enabled, `CFG_TUH_DEVICE_MAX=4`, `CFG_TUH_HID=8`, 256-byte enumeration buffer, and 64-byte HID IN/OUT endpoint buffers | `mini/tusb_config.h` | Composite receivers and descriptors must fit these limits. |
 | One 64-byte shared input report buffer | `hid_report_buffer` in `mini/matrix.c` | Phase 0 must establish maximum interrupt report length and concurrency needs. |
-| Synthetic interface key is `dev_addr * 16 + instance` | mount/report callbacks | Assumes instance fits the low nibble; configured HID max is four. |
+| Synthetic interface key is `dev_addr * 16 + instance` | mount/report callbacks | Assumes instance fits the low nibble; `CFG_TUH_HID` permits eight HID interfaces. |
 | Parser fixed pools: 8 devices / 16 collections / 32 members / 32 usages | `parser/report_descriptor_parser.h` | Complex ELECOM descriptors may exhaust these pools. |
 | Virtual matrix is 32 rows x 8 columns; base map represents HID usage bytes; modifiers occupy row 0 | `mini/info.json`, Vial `keymap.c`, `keyboard_report_hook()` | Vial schema and mouse/gesture reserved positions depend on this shape. |
 | Eight input mouse buttons are assumed | comment and `uint8_t button_current` in Vial `mouse_report_hook()` | Buttons beyond eight cannot be represented by the current path. |
@@ -279,8 +287,11 @@ and vendor initialization can all affect the result.
   Momentary-layer press starts it in `post_process_record_mouse()`.
 - `gesture_start()` clears signed 16-bit X/Y accumulators and sets
   `gesture_wait`. While waiting, the Vial `mouse_report_hook()` accumulates scaled
-  X/Y **after it has already added normal X/Y to the outgoing pointing report**.
-  Thus existing gestures do not suppress the cursor.
+  X/Y after its normal movement/remap handling. The gesture mechanism itself does
+  not automatically suppress cursor movement. An active layer can independently
+  remap X/Y movement to wheel movement, which may result in no cursor movement,
+  but that is a consequence of the movement remap rather than gesture-mode
+  suppression.
 - Recognition occurs only on LT/MO **release** in
   `post_process_record_mouse()`, not when the threshold is crossed.
 - `recognize_gesture()` requires Manhattan distance
@@ -323,9 +334,10 @@ separate from QMK report plumbing in the later gesture task.
 
 ## 8. Unknowns and blockers
 
-- Baseline compile, compiler version, resolved board, linker/flash layout, firmware
-  size, and warnings are unknown because QMK CLI, ARM GCC, and initialized
-  submodules are unavailable.
+- The baseline build and UF2 generation succeeded in repository CI. A local
+  reproduction, local compiler version, resolved board, linker/flash layout,
+  firmware size, and warnings remain unknown in this Codex workspace because QMK
+  CLI, ARM GCC, and initialized submodules are unavailable.
 - Feather VBUS-enable polarity and required stabilization delay were not verified
   against hardware in this source-only task.
 - Feather onboard LED wiring and whether it should be used for host activity need
