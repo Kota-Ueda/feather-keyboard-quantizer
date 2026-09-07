@@ -21,11 +21,11 @@ Do not rewrite previous iterations to make the history look cleaner. If an earli
 
 Why this hypothesis is supported:
 
-- 
+- TBD
 
 What would falsify it:
 
-- 
+- TBD
 
 ### Planned minimal change
 
@@ -88,4 +88,4 @@ Reason:
 
 ### Next action
 
-- 
+- TBD
