@@ -21,13 +21,42 @@ Normal flow:
 1. create `loop/<task-id>-<slug>` from `feather-main`;
 2. put the task prompt under `prompts/tasks/`;
 3. run Codex against the loop task branch;
-4. Codex opens an inner PR to the loop branch;
+4. when the bounded loop reaches `PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`, Codex creates or updates a **Draft inner PR** from its working branch to the declared loop task branch when the platform-supported PR action is available;
 5. human reviews the diff, iteration evidence, and CI;
-6. merge the inner PR only when the task contract is satisfied or when a blocked state must be preserved for human action;
+6. human marks the inner PR ready and merges it only when the task contract is satisfied or when a blocked state must be preserved for human action;
 7. open `loop/<task-id>-<slug>` -> `feather-main` only when the task is `PASS`;
 8. merge to `feather-main` only after merge-readiness gates pass.
 
 Do not open project work directly against upstream `sekigon-gonnoc/vial-qmk`.
+
+## Draft PR handoff
+
+Draft PR creation is part of delivery, not project approval.
+
+When a loop reaches a terminal handoff state (`PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`), the agent should create or update one Draft inner PR when the execution platform exposes a repository-authorized PR action.
+
+The Draft PR MUST:
+
+- target the task contract's declared `loop/<task-id>-<slug>` base branch;
+- originate from the current Codex working branch;
+- remain Draft even when the task status is `PASS`;
+- summarize status, iterations used, changed files, acceptance criteria, hard gates, quality score, verification, hardware evidence, blockers, and recommended next task;
+- link or name the task prompt and run-state files;
+- update an existing inner PR instead of creating duplicates for the same working branch/base pair.
+
+The agent MUST NOT:
+
+- mark its own PR ready for review;
+- merge any PR;
+- enable auto-merge;
+- retarget the PR to `feather-main`;
+- create a PR against upstream;
+- request, expose, store, or configure a personal access token, SSH private key, or other long-lived GitHub credential merely to automate PR creation;
+- bypass the platform-supported repository integration by adding ad-hoc credentials to the task environment.
+
+If the platform does not expose an authorized PR action, PR creation is not a task failure. The agent must report the exact head branch, intended base branch, terminal task status, and that human PR creation is required.
+
+Human review remains mandatory before any inner PR is marked ready or merged.
 
 ## Bounded loop
 
@@ -143,6 +172,7 @@ Before a task is presented for human review, report:
 - builds/tests/checks and exact outcomes;
 - hardware evidence used or still missing;
 - unresolved risks;
+- Draft PR URL when automatically created, otherwise the exact manual PR handoff branches;
 - smallest recommended next task.
 
 ## Authority order

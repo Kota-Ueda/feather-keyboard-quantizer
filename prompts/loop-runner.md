@@ -159,6 +159,63 @@ You may set status to `PASS` only when:
 
 If not, use CONTINUE/BLOCKED/STOP honestly.
 
+## Draft PR handoff
+
+When the loop reaches one of these terminal handoff states:
+
+```text
+PASS
+BLOCKED_HARDWARE
+BLOCKED_ENVIRONMENT
+STOP
+```
+
+perform the following delivery step after the run files and final verification are up to date.
+
+If the execution platform exposes a repository-authorized PR creation/update action:
+
+1. create or update exactly one **Draft PR**;
+2. head = the current Codex working branch;
+3. base = the task contract's declared `loop/<task-id>-<slug>` branch;
+4. never retarget to `feather-main`;
+5. if a PR for the same head/base already exists, update/reuse it instead of creating a duplicate;
+6. keep it Draft regardless of `PASS` status.
+
+The Draft PR title should identify the task and outcome. The body must include:
+
+```text
+Task ID and goal
+Status
+Iterations used / maximum
+Files changed
+Acceptance criteria summary
+Hard-gate summary
+Quality score
+Verification performed and exact outcomes
+Hardware evidence or required checkpoint
+Known risks/blockers
+Run-state paths
+Recommended next task
+```
+
+Credential boundary:
+
+- use only the execution platform's already-authorized repository/PR integration;
+- do not ask the human for a PAT, SSH private key, password, or other long-lived credential merely to automate this step;
+- do not store or configure ad-hoc GitHub credentials in the repository or task environment;
+- do not use credential workarounds to bypass an unavailable platform PR action.
+
+If no authorized PR action is available, do not fail or misclassify the engineering task. Report:
+
+```text
+Draft PR automation: UNAVAILABLE
+Head branch: <exact branch>
+Base branch: <exact loop branch>
+Human action: create Draft PR from head to base
+```
+
+Never mark the PR ready for review. Never merge it. Never enable auto-merge. Never create an upstream PR.
+
 ## Final response
 
 Report:
@@ -173,7 +230,9 @@ Quality score:
 Verification performed:
 Hardware evidence:
 Unresolved risks/blockers:
+Draft PR automation: CREATED / UPDATED / UNAVAILABLE
+Draft PR URL or exact head/base handoff:
 Recommended next task:
 ```
 
-Do not merge the PR. Do not flash hardware. Human review is required.
+Human review is required. Do not merge the PR. Do not flash hardware.
