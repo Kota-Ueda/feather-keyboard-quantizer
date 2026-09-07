@@ -1,66 +1,66 @@
 {
   "task_id": "002",
   "branch": "loop/002-phase-0-hid-capture",
-  "status": "NOT_STARTED",
-  "iteration": 0,
+  "status": "PASS",
+  "iteration": 2,
   "max_iterations": 3,
   "acceptance_criteria": [
     {
       "id": "AC1",
       "description": "Define a reproducible, non-destructive HID capture procedure covering required USB/HID metadata, descriptors, reports, controls, and report lengths.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "docs/feather-quantizer/phase-0-capture.md: capture procedure, sections 1-5."
     },
     {
       "id": "AC2",
       "description": "Define the target-device and connection-mode capture matrix for ELECOM DEFT and ELECOM HUGE PLUS without inventing the DEFT model number or results.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "docs/feather-quantizer/phase-0-capture.md: Target matrix."
     },
     {
       "id": "AC3",
       "description": "Define deterministic evidence naming and schema that separates observed bytes from interpretation and annotation.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "docs/feather-quantizer/research/hid-captures/README.md: deterministic paths and JSON/NDJSON schemas."
     },
     {
       "id": "AC4",
       "description": "Define explicit checks against the KQM constraints identified in Task 001 and cite their repository evidence.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "docs/feather-quantizer/phase-0-capture.md: KQM compatibility worksheet with source symbols."
     },
     {
       "id": "AC5",
       "description": "Document the Feather USB host safety boundary for GP16/GP17 and the evidence process for GP18 VBUS polarity and timing without guessing.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "docs/feather-quantizer/phase-0-capture.md: Safety and preparation."
     },
     {
       "id": "AC6",
       "description": "State explicitly that Task 002 does not prove DEFT or HUGE PLUS compatibility and that later hardware evidence is required.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "Both deliverable introductions and review rules explicitly disclaim compatibility."
     },
     {
       "id": "AC7",
       "description": "Maintain valid loop state and append-only iteration evidence for Task 002.",
-      "status": "UNKNOWN",
-      "evidence": ""
+      "status": "PASS",
+      "evidence": "state.json validates and iterations.md preserves initialization plus Iterations 1-2."
     }
   ],
   "quality": {
-    "score": 0,
+    "score": 98,
     "hard_gates": {
-      "HG1": "UNKNOWN",
-      "HG2": "UNKNOWN",
-      "HG3": "UNKNOWN",
-      "HG4": "UNKNOWN",
-      "HG5": "UNKNOWN",
-      "HG6": "UNKNOWN",
-      "HG7": "UNKNOWN",
-      "HG8": "UNKNOWN",
-      "HG9": "UNKNOWN",
-      "HG10": "UNKNOWN"
+      "HG1": "PASS",
+      "HG2": "PASS",
+      "HG3": "NA",
+      "HG4": "PASS",
+      "HG5": "PASS",
+      "HG6": "PASS",
+      "HG7": "PASS",
+      "HG8": "PASS",
+      "HG9": "PASS",
+      "HG10": "PASS"
     }
   },
   "hardware": {
@@ -70,5 +70,5 @@
   },
   "last_failure_signature": null,
   "same_failure_count": 0,
-  "updated_at": "2026-09-07T21:12:00+09:00"
+  "updated_at": "2026-09-07T12:34:00Z"
 }
