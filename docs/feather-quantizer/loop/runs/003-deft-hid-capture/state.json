@@ -2,7 +2,7 @@
   "task_id": "003",
   "branch": "loop/003-deft-hid-capture",
   "status": "BLOCKED_HARDWARE",
-  "iteration": 1,
+  "iteration": 2,
   "max_iterations": 5,
   "acceptance_criteria": [
     {"id":"AC1","description":"Record physical identity and capture environment for ELECOM DEFT M-DT2DRBK V02 on 2.4 GHz receiver.","status":"UNKNOWN","evidence":""},
@@ -12,10 +12,10 @@
     {"id":"AC5","description":"Evaluate captured evidence against current KQM constraints without an overall compatibility claim.","status":"UNKNOWN","evidence":""},
     {"id":"AC6","description":"Validate JSON/NDJSON, hashes, lengths and separation of observed bytes from interpretation.","status":"UNKNOWN","evidence":""},
     {"id":"AC7","description":"Reach a hardware-backed conclusion sufficient for the next engineering decision.","status":"UNKNOWN","evidence":""},
-    {"id":"AC8","description":"Maintain valid bounded-loop state and append-only iteration evidence.","status":"PASS","evidence":"Iteration 1 is appended in docs/feather-quantizer/loop/runs/003-deft-hid-capture/iterations.md and this state is validated by verify-loop-state.py."}
+    {"id":"AC8","description":"Maintain valid bounded-loop state and append-only iteration evidence.","status":"PASS","evidence":"Iterations 1 and 2 are appended in docs/feather-quantizer/loop/runs/003-deft-hid-capture/iterations.md and this state is validated by verify-loop-state.py."}
   ],
   "quality": {
-    "score": 40,
+    "score": 45,
     "hard_gates": {
       "HG1":"PASS",
       "HG2":"PASS",
@@ -36,5 +36,5 @@
   },
   "last_failure_signature": "Required DEFT M-DT2DRBK V02 2.4 GHz receiver capture is absent.",
   "same_failure_count": 1,
-  "updated_at": "2026-09-07T14:00:00Z"
+  "updated_at": "2026-09-07T15:00:00Z"
 }

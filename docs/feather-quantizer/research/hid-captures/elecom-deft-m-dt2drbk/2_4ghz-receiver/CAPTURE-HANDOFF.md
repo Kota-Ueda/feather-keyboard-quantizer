@@ -18,15 +18,19 @@ capture-notes.md
 capture-sha256.txt
 ```
 
-`usbpcap.pcapng` is staging evidence. After it is committed, Task 003 will
+`usbpcap.pcapng` is staging evidence. It may be committed only if the privacy
+gate below confirms that it contains traffic for the newly inserted DEFT
+receiver and no other USB input device. A root-hub-wide capture containing other
+devices must never be committed to this public repository. After an eligible
+capture is committed, Task 003 will
 extract the schema-defined descriptor binaries, decoded descriptors,
 `device-metadata.json`, `input-reports.ndjson`, `stimulus-checklist.md`, and KQM
 constraint worksheet without changing the observed packet bytes.
 
-Before committing, inspect all five files for a unique device serial number. If
-one is present, stop and report where it appears rather than publishing the
-capture; do not replace bytes inside the PCAP. Receiver label text that is not a
-unique serial should remain intact.
+Before committing, inspect all five files for a unique device serial number or
+traffic belonging to another USB device. If either is present, stop and report
+the issue rather than publishing the capture; do not replace bytes inside the
+PCAP. Receiver label text that is not a unique serial should remain intact.
 
 ## Prerequisites
 
@@ -47,7 +51,7 @@ unique serial should remain intact.
    New-Item -ItemType Directory -Force $Work | Out-Null
    Get-ComputerInfo | Select-Object WindowsProductName,WindowsVersion,OsBuildNumber,OsArchitecture | Format-List | Out-File -Encoding utf8 "$Work\host-info.txt"
    & "$env:ProgramFiles\Wireshark\tshark.exe" --version | Out-File -Append -Encoding utf8 "$Work\host-info.txt"
-   Get-Date -AsUTC -Format 'yyyy-MM-ddTHH:mm:ss.fffffffZ' | Out-File -Append -Encoding utf8 "$Work\host-info.txt"
+   [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffffff'Z'") | Out-File -Append -Encoding utf8 "$Work\host-info.txt"
    ```
 
 5. Transcribe the receiver's physical label (including model/revision text but
@@ -57,23 +61,35 @@ unique serial should remain intact.
 
 ## Capture USB enumeration and input traffic
 
-1. Unplug the DEFT receiver. Start Wireshark and select the USBPcap interface
-   for the USB root hub into which the receiver will be inserted (for example,
-   `USBPcap1`). Do not apply a capture filter. Start capturing before insertion.
-2. Record the capture start time in `capture-notes.md` using:
+1. Unplug the DEFT receiver. Start Wireshark and open the capture options for the
+   USBPcap interface associated with the destination USB root hub (for example,
+   `USBPcap1`). If USBPcap offers its **capture newly connected devices** /
+   **new-device-only** option, enable it and start capturing before insertion.
+   This is the preferred mode because it excludes devices that were already on
+   the root hub.
+2. If that option is not available, do not assume an unfiltered root-hub capture
+   is publishable. Use a port/root hub on which all other USB input devices can
+   be safely disconnected, capture locally, and apply the privacy gate below.
+   Keep any raw root-hub-wide PCAP outside the repository. If the receiver's
+   packets cannot be distinguished from and isolated against every other USB
+   input device on that root hub, stop: **do not copy or commit the PCAP**.
+3. Record whether new-device-only mode was used, and which devices remained on
+   the captured root hub, in `capture-notes.md`.
+4. Record the capture start time in `capture-notes.md` using this command, which
+   works in Windows PowerShell 5.1 as well as PowerShell 7:
 
    ```powershell
-   Get-Date -AsUTC -Format 'yyyy-MM-ddTHH:mm:ss.fffffffZ'
+   [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffffff'Z'")
    ```
 
-3. Insert the receiver directly into that root hub. Wait at least five seconds
+5. Insert the receiver directly into that root hub. Wait at least five seconds
    without touching the DEFT. Confirm in Wireshark that new USB traffic appears.
    If it does not, stop without performing stimuli and repeat on the USBPcap
    interface corresponding to that port. This insertion is required so the PCAP
    includes device, configuration, string, HID, and report-descriptor requests.
-4. Leave the DEFT untouched for at least **10 seconds**. Record the UTC start and
+6. Leave the DEFT untouched for at least **10 seconds**. Record the UTC start and
    end and call this interval `idle-01`.
-5. Perform the checklist below. Before and after every trial, obtain a UTC time
+7. Perform the checklist below. Before and after every trial, obtain a UTC time
    with the PowerShell command above and record it in `capture-notes.md`. Return
    every control to neutral. Repeat every applicable action three times.
 
@@ -117,6 +133,9 @@ time and Wireshark save result in `capture-notes.md`.
 - Capture start UTC:
 - Capture end UTC:
 - USBPcap interface:
+- USBPcap new-device-only mode enabled: yes/no
+- Other devices present on captured root hub:
+- PCAP privacy gate result: pass/fail
 - Receiver USB port/root hub:
 - Remapping software closed:
 - Pairing state observed:
@@ -126,7 +145,7 @@ time and Wireshark save result in `capture-notes.md`.
 | idle-01 | untouched for >=10 seconds | 1 | | | |
 ```
 
-## Validate before handoff
+## Validate and apply the privacy gate before handoff
 
 Run these commands from PowerShell. They read the capture but do not communicate
 with the DEFT:
@@ -146,6 +165,22 @@ Get-Content "$Work\capture-sha256.txt"
 
 The second `tshark` command must display at least one interrupt transfer. Also
 confirm that `usbpcap.pcapng` covers receiver insertion, the full idle interval,
-and every timestamped stimulus. Copy the five requested files into this evidence
-directory and commit them on `loop/003-deft-hid-capture`. Task 003 can then resume
+and every timestamped stimulus.
+
+Before copying anything into the repository, inspect Wireshark's USB device and
+endpoint columns over the **entire** capture, including the enumeration period.
+Confirm all of the following in `capture-notes.md`:
+
+1. new-device-only capture was enabled; or every other device on the root hub
+   was identified and no packet from another USB input device is present;
+2. every interrupt transfer in the PCAP belongs to the inserted DEFT receiver;
+3. no keyboard, other mouse, camera, headset, storage device, security token, or
+   other unrelated device traffic is present;
+4. no unique serial number is present in the PCAP or text files.
+
+If any condition cannot be confirmed, set the privacy gate to `fail`, retain the
+raw PCAP only in the local working directory, and **do not commit it or a filtered
+guess**. Repeat using new-device-only mode or an isolated root hub. Only after
+the privacy gate passes may the five requested files be copied into this evidence
+directory and committed on `loop/003-deft-hid-capture`. Task 003 can then resume
 to extract and validate the complete evidence set.
