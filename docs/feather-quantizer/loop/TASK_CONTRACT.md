@@ -112,6 +112,28 @@ EXPECTED_CHECKPOINT
 
 If `REQUIRED_FOR_PASS` and the hardware is not accessible, the correct result is `BLOCKED_HARDWARE`, not PASS.
 
+## Draft PR handoff policy
+
+The default inner-PR policy for every loop task is:
+
+```text
+DRAFT_INNER_PR_WHEN_PLATFORM_SUPPORTS_IT
+```
+
+A task-specific prompt does not need to repeat this default unless it intentionally changes the handoff behavior with explicit human authorization.
+
+When the task reaches `PASS`, `BLOCKED_HARDWARE`, `BLOCKED_ENVIRONMENT`, or `STOP`, the agent should create or update one Draft PR from its working branch to the declared loop task `Base branch` when the execution platform exposes an authorized PR action.
+
+Draft PR creation is a delivery step. It does not authorize the agent to:
+
+- mark the PR ready for review;
+- merge or enable auto-merge;
+- retarget to `feather-main`;
+- create an upstream PR;
+- provision or request a PAT, SSH key, or other long-lived credential.
+
+If no platform-supported PR action is available, the task may still complete or block normally. The final report must provide the exact head/base branch pair for manual PR creation.
+
 ## Run files
 
 Each task must maintain:
@@ -130,3 +152,5 @@ prompts/tasks/<task-id>-<slug>.md
 ## Completion
 
 The agent may declare `PASS` only after the task contract, `QUALITY_GATES.md`, and `STOP_CONDITIONS.md` all agree that the task is complete.
+
+Creating a Draft PR is not a PASS criterion by itself and does not change task status. A platform limitation that prevents automated PR creation is a handoff limitation, not a reason to falsify `BLOCKED_ENVIRONMENT` or `STOP` when the engineering task itself is otherwise complete.
